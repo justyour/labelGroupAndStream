@@ -129,5 +129,3 @@ CBGroupAndStreamView * silde = [[CBGroupAndStreamView alloc] initWithFrame:CGRec
     [silde setContentView:contentArr titleArr:titleArr]; // 设置数据
     [self.view addSubview:silde];
 ```
-
-<iframe height=500 width=500 src="http://ww4.sinaimg.cn/mw690/e75a115bgw1f3rrbzv1m8g209v0diqv7.gif">
