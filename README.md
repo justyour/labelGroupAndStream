@@ -129,3 +129,4 @@ CBGroupAndStreamView * silde = [[CBGroupAndStreamView alloc] initWithFrame:CGRec
     [silde setContentView:contentArr titleArr:titleArr]; // 设置数据
     [self.view addSubview:silde];
 ```
+![yanshi.gif](https://upload-images.jianshu.io/upload_images/3601465-1f3a345de1f2a4b2.gif?imageMogr2/auto-orient/strip)
