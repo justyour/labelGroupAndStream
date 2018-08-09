@@ -58,10 +58,14 @@
     _maragin_x = _maragin_y = 10;
     _titleLabHeight = 30;
     _radius = 6;
+    _defaultSelectIndex = 0;
 
 }
 
 - (void)setContentView:(NSArray *)contenArr titleArr:(NSArray *)titleArr{
+
+
+
     //每次初始化view时，清除保存选择的值
     [self.saveSelButValueArr removeAllObjects];
     [self.saveGroupIndexArr removeAllObjects];
@@ -70,7 +74,10 @@
     _titleArr = titleArr.count > 0 ? titleArr : _titleArr;
     contenArr = _contetntArr.count > 0 ? _contetntArr:contenArr;
     titleArr = _titleArr.count > 0 ? _titleArr : titleArr;
-
+ 
+    if (_isDefaultSel && _defaultSelectIndexArr.count > 0) {
+        NSAssert(!(_defaultSelectIndexArr.count < titleArr.count), @"设置默认选择数组，需与 titleArr 元素个数一至");
+    }
     //设置rect的初始值
     self.frameRect = CGRectZero;
     //设置内容
@@ -84,7 +91,9 @@
 
     for (NSInteger i = 0 ; i < titleArr.count; ++i) {
         //设置每一组的值，并返回最后一个frame
-        self.frameRect = [self setSignView:contenArr[i] andTitle:titleArr[i] andFrame:self.frameRect andGroupId:i];
+         @autoreleasepool {
+             self.frameRect = [self setSignView:contenArr[i] andTitle:titleArr[i] andFrame:self.frameRect andGroupId:i];
+         }
     }
     //设置滚动视图的滚动范围
     self.scroller.contentSize = CGSizeMake(0, self.frameRect.size.height + self.frameRect.origin.y + 10);
@@ -103,6 +112,8 @@
 
 - (CGRect)setSignView:(NSArray *)dataAr andTitle:(NSString *)titleStr andFrame:(CGRect)frame andGroupId:(NSInteger)groupId{
 
+    NSAssert(!(_defaultSelectIndex > dataAr.count - 1), @"groupId = %ld  _defaultSelectIndex = %ld  dataArrCount = %ld defaultSelectIndex 必须小于或等于 dataAr.count - 1",groupId,_defaultSelectIndex,dataAr.count);
+
     UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(15, frame.size.height + frame.origin.y + 10, 0, _titleLabHeight)];
     label.font = _titleTextFont;
     label.text = titleStr;
@@ -118,8 +129,9 @@
     CGFloat butorignX = _maragin_x;
     CGFloat alineButWidth = 0;
     CGRect current_rect;
+    NSMutableArray * tempSelArr = [[NSMutableArray alloc] init];
     for (NSInteger i = 0; i < dataAr.count; ++i) {
-        @autoreleasepool {
+
             CGSize contentSize = [self sizeWidthWidth:dataAr[i] font:_font maxHeight:butHeight];
             //创建按钮
             UIButton *but = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -147,30 +159,58 @@
             [but addTarget:self action:@selector(butClick:) forControlEvents:UIControlEventTouchUpInside];
             but.layer.cornerRadius = _radius;
             but.layer.masksToBounds = YES;
-            //默认选中第一个
+            //设置默认选择
             if (_isDefaultSel) {
-                if (i == 0) {
-                    but.backgroundColor = _selColor;
-                    but.selected = YES;
-                    //默认保存选中第一个按钮的值
-                    NSString *valueStr = [NSString stringWithFormat:@"%ld/%@",i,dataAr[i]];
-
-                    if (_singleFlagArr.count > 0) {
-                        [self.saveSelButValueArr replaceObjectAtIndex:groupId withObject:[_singleFlagArr[groupId] isEqual:@0] ? @[valueStr] : valueStr];
+                 NSString *valueStr = [NSString stringWithFormat:@"%ld/%@",i,dataAr[i]];
+                //设置默认选择以数组形式，则存在多选
+                if (_defaultSelectIndexArr.count > 0) {
+                    //每个组单独设置默认选中值
+                    NSArray * selIndexArr = nil;
+                    NSNumber * indexNumber = nil;
+                    [_defaultSelectIndexArr[groupId] isKindOfClass:[NSArray class]] ? (selIndexArr = _defaultSelectIndexArr[groupId]) : (indexNumber = _defaultSelectIndexArr[groupId]);
+                    if (selIndexArr.count > 0) {
+                        for (NSNumber * selIndex in selIndexArr) {
+                            if (i == [selIndex integerValue]) {
+                                but.selected = YES;
+                                but.backgroundColor = _selColor;
+                                [tempSelArr addObject:valueStr];
+                                break;
+                            }
+                        }
                     }else{
-                        [self.saveSelButValueArr replaceObjectAtIndex:groupId withObject:_isSingle ? valueStr : @[valueStr]];
+                        if (i == [indexNumber integerValue]) {
+                            but.selected = YES;
+                            [tempSelArr addObject:valueStr];
+                            but.backgroundColor = _selColor;
+                        }
                     }
 
-                    //保存groupID
-                    [self.saveGroupIndexArr replaceObjectAtIndex:groupId withObject:[NSNumber numberWithInteger:groupId]];
+                }else{
+                    //统一设置默认选择值
+                    if (i == _defaultSelectIndex) {
+                        but.backgroundColor = _selColor;
+                        but.selected = YES;
+                        //保存默认选中按钮的值
+                        if (_singleFlagArr.count > 0) {
+                            //为每个组设置单选还是多选
+                            [self.saveSelButValueArr replaceObjectAtIndex:groupId withObject:[_singleFlagArr[groupId] isEqual:@0] ? @[valueStr] : valueStr];
+                        }else{
+                            [self.saveSelButValueArr replaceObjectAtIndex:groupId withObject:_isSingle ? valueStr : @[valueStr]];
+                        }
+                    }
                 }
+                //保存groupID
+                [self.saveGroupIndexArr replaceObjectAtIndex:groupId withObject:[NSNumber numberWithInteger:groupId]];
             }
             if (i == dataAr.count - 1) {
                 //当最后一个按钮时，返回坐标
                 rect = but.frame;
             }
         }
+    if (_defaultSelectIndexArr.count > 0 && _isDefaultSel) {
+         [self.saveSelButValueArr replaceObjectAtIndex:groupId withObject:tempSelArr];
     }
+
     return rect;
 }
 
@@ -214,10 +254,11 @@
      [self.saveSelButValueArr replaceObjectAtIndex:sender.tag / 100 withObject:valueStr];
     //保存groupID
     [self.saveGroupIndexArr replaceObjectAtIndex:sender.tag / 100 withObject:[NSNumber numberWithInteger:sender.tag / 100]];
-    //传递当前选中的Value
+    //代理传值
     if ([self.delegate respondsToSelector:@selector(cb_selectCurrentValueWith:index:groupId:)]) {
         [self.delegate cb_selectCurrentValueWith:self.dataSourceArr[sender.tag / 100][sender.tag % 100 - 1] index:sender.tag % 100 - 1 groupId:sender.tag / 100];
     }
+    //block传值
     if (_cb_selectCurrentValueBlock) {
         _cb_selectCurrentValueBlock(self.dataSourceArr[sender.tag / 100][sender.tag % 100 - 1],sender.tag % 100 - 1,sender.tag / 100);
     }
@@ -262,7 +303,7 @@
     }
 }
 
-#pragma mark---确定重置
+#pragma mark---确定
 - (void)confirm{
     if ([self.delegate respondsToSelector:@selector(cb_confirmReturnValue:groupId:)]) {
         [self.delegate cb_confirmReturnValue:self.saveSelButValueArr groupId:self.saveGroupIndexArr];
@@ -271,7 +312,7 @@
         _cb_confirmReturnValueBlock(self.saveSelButValueArr,self.saveGroupIndexArr);
     }
 }
-
+#pragma mark---重置
 - (void)reset{
     //重置，回到初始默认状态
     for (UIButton *but in self.scroller.subviews) {
@@ -292,6 +333,28 @@
             NSAssert([obj isEqual:@""], @"singleFlagArr 数组元素只能是 0 和 1");
             *stop = YES;
         }
+    }];
+}
+
+- (void)setDefaultSelectIndexArr:(NSArray *)defaultSelectIndexArr{
+    _defaultSelectIndexArr = defaultSelectIndexArr;
+    //判断是否有数组
+    __weak typeof(self) weakself = self;
+    [_defaultSelectIndexArr enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        __strong typeof(self) strongself = weakself;
+        if ([obj isKindOfClass:[NSArray class]]) {
+
+            if ([strongself.singleFlagArr[idx] isEqual:@1] && strongself.singleFlagArr.count > 0) {
+                //当设置默认选中的为一个数组时，但设置分组的为单选，则要将改为多选
+                NSMutableArray * arr = [NSMutableArray arrayWithArray:strongself.singleFlagArr];
+                [arr replaceObjectAtIndex:idx withObject:@0];
+                strongself.singleFlagArr = arr;
+            }
+        }
+        if (!([obj isKindOfClass:[NSNumber class]] || [obj isKindOfClass:[NSArray class]])) {
+            NSAssert(![obj isEqual:@""], @"defaultSelectIndexArr 数组元素只能是 NSNumber 或 NSArray<NSNumber *>");
+        }
+
     }];
 }
 

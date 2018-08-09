@@ -44,12 +44,15 @@
 
     CBGroupAndStreamView * silde = [[CBGroupAndStreamView alloc] initWithFrame:CGRectMake(0, 0, [UIScreen mainScreen].bounds.size.width, [UIScreen mainScreen].bounds.size.height)];
     silde.delegate = self;
-    silde.isDefaultSel = NO;
+    silde.isDefaultSel = YES;
     silde.isSingle = YES;
     silde.radius = 10;
     silde.font = [UIFont systemFontOfSize:12];
     silde.titleTextFont = [UIFont systemFontOfSize:18];
-    silde.singleFlagArr = @[@0,@1,@1,@0];
+    silde.singleFlagArr = @[@1,@0,@1,@0];
+    silde.defaultSelectIndex = 5;
+    silde.defaultSelectIndexArr = @[@0,@[@1,@3],@0,@[@1,@9,@4]];
+    silde.selColor = [UIColor orangeColor];
     [silde setContentView:contentArr titleArr:titleArr];
     [self.view addSubview:silde];
     _menueView = silde;

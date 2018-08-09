@@ -13,8 +13,6 @@ typedef void(^cb_ConfirmReturnValueBlock)(NSArray * valueArr, NSArray * groupIdA
 typedef void(^cb_SelectCurrentValueBlock)(NSString * value, NSInteger index, NSInteger groupId);
 
 @protocol CBGroupAndStreamDelegate <NSObject>
-
-
 /**
  传全部选中的选项，以数组形式传出
 
@@ -47,6 +45,22 @@ typedef void(^cb_SelectCurrentValueBlock)(NSString * value, NSInteger index, NSI
  是否默认选择 ，默认为YES，选中第一个
  */
 @property (assign, nonatomic) BOOL isDefaultSel;
+
+/**
+ 设置默认选择第几个，需要小于 最小数据组的count，默认是 0 第一个
+ 在 isDefaultSel 为 YES 时才起作用
+ */
+@property (assign, nonatomic) NSInteger defaultSelectIndex;
+
+/**
+ 设置该属性时 defaultSelectIndex 则无效
+ 设置默认选择多少个，传的是index，需要小于 最小数据组的count，
+ isDefaultSel 为 YES 时才起作用
+ 传入的下标 请用 NSNumber
+ 当设置了 singleFlagArr 属性时，defaultSelectIndexArr 会监测元素是否为 数组，并当singleFlagArr的元素为1即单选
+ 时，则会修改为多选
+ */
+@property (copy, nonatomic) NSArray * defaultSelectIndexArr;
 
 /**
  默认颜色
@@ -118,7 +132,7 @@ typedef void(^cb_SelectCurrentValueBlock)(NSString * value, NSInteger index, NSI
 @property (copy, nonatomic) cb_SelectCurrentValueBlock cb_selectCurrentValueBlock;
 
 /**
- 设置改属性 则 isSingle 无效
+ 设置该属性 则 isSingle 无效
  为每一个分组单独设置 单选或多选, 为 NSNumber 类型，count 必须设置与数据源的 titleArr.count 一致
  只传 0 和 1， 0 表示 多选， 1 表示 单选
  */
