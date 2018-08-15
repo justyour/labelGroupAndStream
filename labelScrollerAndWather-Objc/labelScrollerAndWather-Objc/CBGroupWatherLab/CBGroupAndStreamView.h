@@ -57,7 +57,7 @@ typedef void(^cb_SelectCurrentValueBlock)(NSString * value, NSInteger index, NSI
  设置默认选择多少个，传的是index，需要小于 最小数据组的count，
  isDefaultSel 为 YES 时才起作用
  传入的下标 请用 NSNumber
- 当设置了 singleFlagArr 属性时，defaultSelectIndexArr 会监测元素是否为 数组，并当singleFlagArr的元素为1即单选
+ 当设置了 singleFlagArr 属性时，defaultSelectIndexArr 会监测元素是否为 数组，并当singleFlagArr的元素个数为1即单选
  时，则会修改为多选
  */
 @property (copy, nonatomic) NSArray * defaultSelectIndexArr;
