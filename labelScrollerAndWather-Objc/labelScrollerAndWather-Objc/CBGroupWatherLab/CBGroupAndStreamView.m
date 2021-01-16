@@ -147,7 +147,6 @@
             but.titleEdgeInsets = UIEdgeInsetsMake(0, 10, 0, 10);
             butWidth = UIScreen.mainScreen.bounds.size.width - 2 * _maragin_x;
             butHeight = [self sizwWithHeight:dataAr[idx] font:_font maxWidth:butWidth - 20];
-            NSLog(@"butHeight = %f", butHeight);
 
         }else{
             butHeight = _butHeight;
