@@ -80,15 +80,16 @@
     [self.dataSourceArr removeAllObjects];
     [self.dataSourceArr addObjectsFromArray:contenArr];
 
-    for (NSInteger i = 0 ; i < titleArr.count; ++i) {
+    [titleArr enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
         //设置默认的值，使保存值的数组是按照group的顺序来保存，便于后面对相应的group的值进行增改
         [self.saveSelButValueArr addObject:@""];
         [self.saveGroupIndexArr addObject:@""];
         //设置每一组的值，并返回最后一个frame
-         @autoreleasepool {
-             self.frameRect = [self setSignView:contenArr[i] andTitle:titleArr[i] andFrame:self.frameRect andGroupId:i];
-         }
-    }
+        @autoreleasepool {
+            self.frameRect = [self setSignView:contenArr[idx] andTitle:titleArr[idx] andFrame:self.frameRect andGroupId:idx];
+        }
+    }];
+
     //设置滚动视图的滚动范围
     self.scroller.contentSize = CGSizeMake(0, self.frameRect.size.height + self.frameRect.origin.y + 10);
 }
@@ -116,93 +117,108 @@
     label.textColor = _titleTextColor;
     [self.scroller addSubview:label];
 
-    CGRect rect = CGRectZero;
-    CGFloat butHeight = _butHeight;
-    CGFloat margainY = 5 + label.y + label.height;
-    CGFloat but_totalHeight = margainY;
-    CGFloat butorignX = _maragin_x;
-    CGFloat alineButWidth = 0;
-    CGRect current_rect;
+    __block CGRect rect = CGRectZero;
+    __block CGFloat butHeight = _butHeight;
+    __block CGFloat margainY = 5 + label.y + label.height;
+    __block CGFloat but_totalHeight = margainY;
+    __block CGFloat butorignX = _maragin_x;
+    __block CGFloat alineButWidth = 0;
+    __block CGRect current_rect;
     NSMutableArray * tempSelArr = [[NSMutableArray alloc] init];
-    for (NSInteger i = 0; i < dataAr.count; ++i) {
 
-            CGSize contentSize = [self sizeWidthWidth:dataAr[i] font:_font maxHeight:butHeight];
-            //创建按钮
-            UIButton *but = [UIButton buttonWithType:UIButtonTypeCustom];
-            [but setTitleColor:_contentNorColor forState:UIControlStateNormal];
-            [but setTitleColor:_contentSelColor forState:UIControlStateSelected];
-            [but setTitle:dataAr[i] forState:UIControlStateNormal];
-            [self.scroller addSubview:but];
-            but.titleLabel.font = _font;
-            // 九宫格算法，每行放三个 margainX+(i%3)*(butWidth + 10)  margainY+(i/3)*(butHeight+10)
-            //处理标签流
-            CGFloat butWidth = contentSize.width + 20;
-            butorignX = alineButWidth + _maragin_x;
-            alineButWidth = _maragin_x + butWidth + alineButWidth;
-            if (alineButWidth >= self.width) {
-                butorignX = _maragin_x;
-                alineButWidth = butorignX + butWidth;
-                but_totalHeight = current_rect.size.height + current_rect.origin.y + _maragin_y;
-            }
+    [dataAr enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        CGSize contentSize = [self sizeWidthWidth:dataAr[idx] font:_font maxHeight:butHeight];
+        //创建按钮
+        UIButton *but = [UIButton buttonWithType:UIButtonTypeCustom];
+        [but setTitleColor:_contentNorColor forState:UIControlStateNormal];
+        [but setTitleColor:_contentSelColor forState:UIControlStateSelected];
+        [but setTitle:dataAr[idx] forState:UIControlStateNormal];
+        [self.scroller addSubview:but];
+        but.titleLabel.font = _font;
 
-            but.frame = CGRectMake(butorignX, but_totalHeight, butWidth, butHeight);
-            current_rect = but.frame;
-            but.backgroundColor = _norColor;
-            but.tag = groupId * 100 + i + 1;
-            //按钮样式
-            [but addTarget:self action:@selector(butClick:) forControlEvents:UIControlEventTouchUpInside];
-            but.layer.cornerRadius = _radius;
-            but.layer.masksToBounds = YES;
-            //设置默认选择
-            if (_isDefaultSel) {
-                 NSString *valueStr = [NSString stringWithFormat:@"%ld/%@",i,dataAr[i]];
-                //设置默认选择以数组形式，则存在多选
-                if (_defaultSelectIndexArr.count > 0) {
-                    //每个组单独设置默认选中值
-                    NSArray * selIndexArr = nil;
-                    NSNumber * indexNumber = nil;
-                    [_defaultSelectIndexArr[groupId] isKindOfClass:[NSArray class]] ? (selIndexArr = _defaultSelectIndexArr[groupId]) : (indexNumber = _defaultSelectIndexArr[groupId]);
-                    if (selIndexArr.count > 0) {
-                        for (NSNumber * selIndex in selIndexArr) {
-                            if (i == [selIndex integerValue]) {
-                                but.selected = YES;
-                                but.backgroundColor = _selColor;
-                                [tempSelArr addObject:valueStr];
-                                break;
-                            }
-                        }
-                    }else{
-                        if (i == [indexNumber integerValue]) {
+        // 九宫格算法，每行放三个 margainX+(i%3)*(butWidth + 10)  margainY+(i/3)*(butHeight+10)
+        //处理标签流
+        CGFloat butWidth = contentSize.width + 20;
+        butorignX = alineButWidth + _maragin_x;
+        if (butWidth > UIScreen.mainScreen.bounds.size.width - 2 * _maragin_x) {
+            // 设置多行
+            but.titleLabel.numberOfLines = 0;
+            // 设置边距
+            but.titleEdgeInsets = UIEdgeInsetsMake(0, 10, 0, 10);
+            butWidth = UIScreen.mainScreen.bounds.size.width - 2 * _maragin_x;
+            butHeight = [self sizwWithHeight:dataAr[idx] font:_font maxWidth:butWidth - 20];
+            NSLog(@"butHeight = %f", butHeight);
+
+        }else{
+            butHeight = _butHeight;
+        }
+
+        alineButWidth = _maragin_x + butWidth + alineButWidth;
+        if (alineButWidth >= self.width) {
+            butorignX = _maragin_x;
+            alineButWidth = butorignX + butWidth;
+            but_totalHeight = current_rect.size.height + current_rect.origin.y + _maragin_y;
+        }
+
+        but.frame = CGRectMake(butorignX, but_totalHeight, butWidth, butHeight);
+        current_rect = but.frame;
+        but.backgroundColor = _norColor;
+        but.tag = groupId * 100 + idx + 1;
+        //按钮样式
+        [but addTarget:self action:@selector(butClick:) forControlEvents:UIControlEventTouchUpInside];
+        but.layer.cornerRadius = _radius;
+        but.layer.masksToBounds = YES;
+        //设置默认选择
+        if (_isDefaultSel) {
+            NSString *valueStr = [NSString stringWithFormat:@"%ld/%@",idx,dataAr[idx]];
+            //设置默认选择以数组形式，则存在多选
+            if (_defaultSelectIndexArr.count > 0) {
+                //每个组单独设置默认选中值
+                NSArray * selIndexArr = nil;
+                NSNumber * indexNumber = nil;
+                [_defaultSelectIndexArr[groupId] isKindOfClass:[NSArray class]] ? (selIndexArr = _defaultSelectIndexArr[groupId]) : (indexNumber = _defaultSelectIndexArr[groupId]);
+                if (selIndexArr.count > 0) {
+                    for (NSNumber * selIndex in selIndexArr) {
+                        if (idx == [selIndex integerValue]) {
                             but.selected = YES;
-                            [tempSelArr addObject:valueStr];
                             but.backgroundColor = _selColor;
+                            [tempSelArr addObject:valueStr];
+                            break;
                         }
                     }
-
                 }else{
-                    //统一设置默认选择值
-                    if (i == _defaultSelectIndex) {
-                        but.backgroundColor = _selColor;
+                    if (idx == [indexNumber integerValue]) {
                         but.selected = YES;
-                        //保存默认选中按钮的值
-                        if (_singleFlagArr.count > 0) {
-                            //为每个组设置单选还是多选
-                            [self.saveSelButValueArr replaceObjectAtIndex:groupId withObject:[_singleFlagArr[groupId] isEqual:@0] ? @[valueStr] : valueStr];
-                        }else{
-                            [self.saveSelButValueArr replaceObjectAtIndex:groupId withObject:_isSingle ? valueStr : @[valueStr]];
-                        }
+                        [tempSelArr addObject:valueStr];
+                        but.backgroundColor = _selColor;
                     }
                 }
-                //保存groupID
-                [self.saveGroupIndexArr replaceObjectAtIndex:groupId withObject:[NSNumber numberWithInteger:groupId]];
+
+            }else{
+                //统一设置默认选择值
+                if (idx == _defaultSelectIndex) {
+                    but.backgroundColor = _selColor;
+                    but.selected = YES;
+                    //保存默认选中按钮的值
+                    if (_singleFlagArr.count > 0) {
+                        //为每个组设置单选还是多选
+                        [self.saveSelButValueArr replaceObjectAtIndex:groupId withObject:[_singleFlagArr[groupId] isEqual:@0] ? @[valueStr] : valueStr];
+                    }else{
+                        [self.saveSelButValueArr replaceObjectAtIndex:groupId withObject:_isSingle ? valueStr : @[valueStr]];
+                    }
+                }
             }
-            if (i == dataAr.count - 1) {
-                //当最后一个按钮时，返回坐标
-                rect = but.frame;
-            }
+            //保存groupID
+            [self.saveGroupIndexArr replaceObjectAtIndex:groupId withObject:[NSNumber numberWithInteger:groupId]];
         }
+        if (idx == dataAr.count - 1) {
+            //当最后一个按钮时，返回坐标
+            rect = but.frame;
+        }
+    }];
+
     if (_defaultSelectIndexArr.count > 0 && _isDefaultSel) {
-         [self.saveSelButValueArr replaceObjectAtIndex:groupId withObject:tempSelArr];
+        [self.saveSelButValueArr replaceObjectAtIndex:groupId withObject:tempSelArr];
     }
 
     return rect;
@@ -239,13 +255,13 @@
             }
         }
         //取出当前所在的组的一条数据，因为单选，所以就只有一条数据, 并拼接当前选择的Index
-       valueStr = [NSString stringWithFormat:@"%ld/%@",sender.tag % 100 - 1,self.dataSourceArr[sender.tag / 100][sender.tag % 100 - 1]];
+        valueStr = [NSString stringWithFormat:@"%ld/%@",sender.tag % 100 - 1,self.dataSourceArr[sender.tag / 100][sender.tag % 100 - 1]];
 
     }else{
         sender.backgroundColor = _norColor;
         valueStr = @"";
     }
-     [self.saveSelButValueArr replaceObjectAtIndex:sender.tag / 100 withObject:valueStr];
+    [self.saveSelButValueArr replaceObjectAtIndex:sender.tag / 100 withObject:valueStr];
     //保存groupID
     [self.saveSelButValueArr[sender.tag / 100] isEqualToString:@""] ? [self.saveGroupIndexArr replaceObjectAtIndex:sender.tag / 100 withObject:@""] : [self.saveGroupIndexArr replaceObjectAtIndex:sender.tag / 100 withObject:[NSNumber numberWithInteger:sender.tag / 100]];
     //代理传值
@@ -283,7 +299,7 @@
 
     [self.saveSelButValueArr replaceObjectAtIndex:sender.tag / 100 withObject:tempSaveArr?tempSaveArr:@""];
     //保存groupID
-   [self.saveSelButValueArr[sender.tag / 100] count] == 0 ? [self.saveGroupIndexArr replaceObjectAtIndex:sender.tag / 100 withObject:@""] : [self.saveGroupIndexArr replaceObjectAtIndex:sender.tag / 100 withObject:[NSNumber numberWithInteger:sender.tag / 100]];
+    [self.saveSelButValueArr[sender.tag / 100] count] == 0 ? [self.saveGroupIndexArr replaceObjectAtIndex:sender.tag / 100 withObject:@""] : [self.saveGroupIndexArr replaceObjectAtIndex:sender.tag / 100 withObject:[NSNumber numberWithInteger:sender.tag / 100]];
 
     //传递当前选中的Value
     if ([self.delegate respondsToSelector:@selector(cb_selectCurrentValueWith:index:groupId:)]) {
@@ -391,6 +407,18 @@
     attrDict[NSFontAttributeName] = font;
     CGSize size = [text boundingRectWithSize:CGSizeMake(MAXFLOAT, height) options:NSStringDrawingUsesLineFragmentOrigin attributes:attrDict context:nil].size;
     return size;
+}
+
+- (CGFloat)sizwWithHeight:(NSString *)text font:(UIFont *)font maxWidth:(CGFloat)width{
+
+    NSMutableDictionary *attrDict = [NSMutableDictionary dictionary];
+    attrDict[NSFontAttributeName] = font;
+    CGSize size = [text boundingRectWithSize:CGSizeMake(width, MAXFLOAT) options:NSStringDrawingUsesLineFragmentOrigin attributes:attrDict context:nil].size;
+    return size.height + 15;
+}
+
+- (void)dealloc{
+    NSLog(@"%s", __func__);
 }
 
 @end
